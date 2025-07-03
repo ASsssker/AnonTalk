@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info: 
+  title: Anonimus chat
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /swagger:
+    get:
+      tags:
+        - swagger
+        - description
+      summary: returns json api description
+      description: getAPI
+      operationId: getApi
+      responses:
+        200:
+          description: scheme in json
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/API'
+        404:
+          description: not found error
+          content: {}
+  /healthcheck:
+    get:
+      tags:
+        - healthcheck
+      summary: healthcheck endpoint
+      description: send a request to the healthcheck service
+      operationId: healthcheck
+      responses:
+        200:
+          description: service is ok
+  /room:
+    post:
+      tags:
+        - room
+      summary: create new room
+      description: createNewRoom
+      operationId: createNewRoom
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string  
+                  x-go-skip-optional-pointer: true
+      responses:
+        201:
+          description: new room info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomInfo'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /room/{id}:
+    get:
+      tags:
+        - room
+      summary: get room info
+      description: getRoominfo
+      operationId: getRoominfo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: room info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomInfo'
+        404:
+          description: room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /ws/room/{id}:
+    get:
+      tags:
+        - room
+        - websocket
+      summary: connect to room
+      description: connectRoom
+      operationId: connectRoom
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: username
+          required: false
+          schema:
+            type: string
+      responses:
+        404:
+          description: room not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    RoomInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          x-go-skip-optional-pointer: true
+        name:
+          type: string
+          x-go-skip-optional-pointer: true
+    API:
+      type: object
+      properties:
+        api:
+          type: string
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int64
+        description:
+          type: string
