@@ -1,0 +1,20 @@
+version: 3
+
+vars:
+  DEV_TOOLS:
+    - github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
+
+tasks:
+  tools:install:
+    desc: install dev tools
+    cmds:
+      - |
+        {{range $tool := .DEV_TOOLS}}
+        go install {{$tool}}
+        {{end}}
+  generate:bp:
+    desc: generate boilerplates
+    cmds:
+      - oapi-codegen -generate echo-server -o internal/rest/v1/boilerplate/server.gen.go -package boilerplate  api/openapi.yml
+      - oapi-codegen -generate types -o internal/rest/v1/boilerplate/types.gen.go -package boilerplate  api/openapi.yml
+      - oapi-codegen -generate client -o internal/rest/v1/boilerplate/client.gen.go -package boilerplate  api/openapi.yml
