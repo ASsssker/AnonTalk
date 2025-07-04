@@ -17,13 +17,13 @@ type RoomService interface {
 }
 
 type Handler struct {
-	log        *slog.Logger
+	log         *slog.Logger
 	roomService RoomService
 }
 
 func NewHandler(log *slog.Logger, roomService RoomService) *Handler {
 	return &Handler{
-		log:        log,
+		log:         log,
 		roomService: roomService,
 	}
 }
@@ -46,7 +46,7 @@ func (h Handler) GetApi(c echo.Context) error {
 
 	spec, err := swagger.MarshalJSON()
 	if err != nil {
-		fmt.Errorf("failed to marshall swagger spec: %w", err)
+		return fmt.Errorf("failed to marshall swagger spec: %w", err)
 	}
 
 	specStr := string(spec)
@@ -78,7 +78,7 @@ func (h Handler) GetRoomInfo(c echo.Context, id string) error {
 
 	room, err := h.roomService.GetRoom(ctx, id)
 	if err != nil {
-		fmt.Errorf("failed to get room: %w", err)
+		return fmt.Errorf("failed to get room: %w", err)
 	}
 
 	response := bp.RoomInfo{Id: room.UUID, Name: room.Name}
