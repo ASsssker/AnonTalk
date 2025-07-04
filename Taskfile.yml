@@ -18,3 +18,4 @@ tasks:
       - oapi-codegen -generate echo-server -o internal/rest/v1/boilerplate/server.gen.go -package boilerplate  api/openapi.yml
       - oapi-codegen -generate types -o internal/rest/v1/boilerplate/types.gen.go -package boilerplate  api/openapi.yml
       - oapi-codegen -generate client -o internal/rest/v1/boilerplate/client.gen.go -package boilerplate  api/openapi.yml
+      - oapi-codegen -generate spec -o internal/rest/v1/boilerplate/spec.gen.go -package boilerplate  api/openapi.yml
