@@ -67,8 +67,8 @@ paths:
       tags:
         - room
       summary: get room info
-      description: getRoominfo
-      operationId: getRoominfo
+      description: getRoomInfo
+      operationId: getRoomInfo
       parameters:
         - in: path
           name: id
