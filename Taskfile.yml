@@ -1,8 +1,10 @@
 version: 3
 
 vars:
+  MOCKS_PATH: $PWD/mock
   DEV_TOOLS:
     - github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
+    - go.uber.org/mock/mockgen@v0.5.2
 
 tasks:
   tools:install:
@@ -19,3 +21,6 @@ tasks:
       - oapi-codegen -generate types -o internal/rest/v1/boilerplate/types.gen.go -package boilerplate  api/openapi.yml
       - oapi-codegen -generate client -o internal/rest/v1/boilerplate/client.gen.go -package boilerplate  api/openapi.yml
       - oapi-codegen -generate spec -o internal/rest/v1/boilerplate/spec.gen.go -package boilerplate  api/openapi.yml
+  generate:mock:
+    desc: generate mocks
+    cmd: MOCK_FOLDER={{.MOCKS_PATH}} go generate -v -run="mockgen*" ./...
