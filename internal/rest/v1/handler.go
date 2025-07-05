@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+//go:generate mockgen -package mock -destination $MOCK_FOLDER/rest/v1/handler/services.go . RoomService
 type RoomService interface {
 	CreateNewRoom(ctx context.Context, roomName string) (*models.Room, error)
 	GetRoom(ctx context.Context, id string) (*models.Room, error)

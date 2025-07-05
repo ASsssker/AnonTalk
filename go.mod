@@ -6,6 +6,7 @@ require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/oapi-codegen/runtime v1.1.1
+	go.uber.org/mock v0.5.2
 )
 
 require (
