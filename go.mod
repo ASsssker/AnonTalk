@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/google/uuid v1.5.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/oapi-codegen/runtime v1.1.1
