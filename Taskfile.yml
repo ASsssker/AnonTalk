@@ -24,3 +24,7 @@ tasks:
   generate:mock:
     desc: generate mocks
     cmd: MOCK_FOLDER={{.MOCKS_PATH}} go generate -v -run="mockgen*" ./...
+
+  tests:run:units:
+    desc: run unit tests
+    cmd: go test $(go list ./... | grep -v /tests) -coverprofile .unitTestsCoverage.out
