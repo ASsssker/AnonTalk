@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	models "github.com/ASsssker/AnonTalk/internal/models"
+	websocket "github.com/gorilla/websocket"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,6 +40,20 @@ func NewMockRoomService(ctrl *gomock.Controller) *MockRoomService {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRoomService) EXPECT() *MockRoomServiceMockRecorder {
 	return m.recorder
+}
+
+// AddUserToRoom mocks base method.
+func (m *MockRoomService) AddUserToRoom(ctx context.Context, roomID, clientName string, clientConn *websocket.Conn) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserToRoom", ctx, roomID, clientName, clientConn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserToRoom indicates an expected call of AddUserToRoom.
+func (mr *MockRoomServiceMockRecorder) AddUserToRoom(ctx, roomID, clientName, clientConn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToRoom", reflect.TypeOf((*MockRoomService)(nil).AddUserToRoom), ctx, roomID, clientName, clientConn)
 }
 
 // CreateNewRoom mocks base method.
