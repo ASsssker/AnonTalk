@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
 	mock "github.com/ASsssker/AnonTalk/mock/room"
@@ -11,32 +12,17 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var clientsCount = 10
-
-func TestNewRoom_GoodPath(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	t.Cleanup(ctrl.Finish)
-
-	clients := make([]RoomClient, 0, clientsCount)
-	for range clientsCount {
-		client := mock.NewMockRoomClient(ctrl)
-		client.EXPECT().
-			GetID().
-			Return(uuid.NewString()).
-			AnyTimes()
-
-		clients = append(clients, client)
-	}
-
-	room := NewRoom(tests.NewTestLogger(), "test-room", clients...)
-	assert.Equal(t, clientsCount, len(room.clients))
-}
+var clientsCount = 100
 
 func TestRoomAddClients_GoodPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	clients := make([]RoomClient, 0, clientsCount)
+	room := NewRoom(tests.NewTestLogger(), "test-room")
+	waitChan := make(chan struct{})
+	wg := sync.WaitGroup{}
+	wg.Add(clientsCount)
+
 	for range clientsCount {
 		client := mock.NewMockRoomClient(ctrl)
 		client.EXPECT().
@@ -44,19 +30,35 @@ func TestRoomAddClients_GoodPath(t *testing.T) {
 			Return(uuid.NewString()).
 			AnyTimes()
 
-		clients = append(clients, client)
+		client.EXPECT().
+			MsgSubscribe(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ any, _ any) error { <-waitChan; wg.Wait(); return nil }).
+			AnyTimes()
+
+		client.EXPECT().
+			Close(gomock.Any()).
+			Return(nil).
+			AnyTimes()
+
+		go room.AddClient(client)
 	}
 
-	room := NewRoom(tests.NewTestLogger(), "test-room")
-	room.AddClients(clients...)
-	assert.Equal(t, clientsCount, len(room.clients))
+	for range clientsCount {
+		waitChan <- struct{}{}
+		defer wg.Done()
+	}
+
+	assert.Equal(t, clientsCount, room.ClientsCount())
 }
 
 func TestRoomDeleteClients_GoodPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	clients := make([]RoomClient, 0, clientsCount)
+	room := NewRoom(tests.NewTestLogger(), "test-room")
+	wg := sync.WaitGroup{}
+	wg.Add(clientsCount)
+
 	for range clientsCount {
 		client := mock.NewMockRoomClient(ctrl)
 		client.EXPECT().
@@ -64,24 +66,32 @@ func TestRoomDeleteClients_GoodPath(t *testing.T) {
 			Return(uuid.NewString()).
 			AnyTimes()
 
-		clients = append(clients, client)
+		client.EXPECT().
+			MsgSubscribe(gomock.Any(), gomock.Any()).
+			Return(nil).
+			AnyTimes()
+
+		client.EXPECT().
+			Close(gomock.Any()).
+			Return(nil).
+			DoAndReturn(func(_ any) error { defer wg.Done(); return nil }).
+			AnyTimes()
+
+		go room.AddClient(client)
 	}
 
-	room := NewRoom(tests.NewTestLogger(), "test-room", clients...)
-	clientsID := make([]string, 0, clientsCount)
-	for _, client := range clients {
-		clientsID = append(clientsID, client.GetID())
-	}
-
-	room.DeleteClients(clientsID...)
-	assert.Equal(t, 0, len(room.clients))
+	wg.Wait()
+	assert.Equal(t, 0, room.ClientsCount())
 }
 
 func TestRoomBroadcast_GoodPath(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	clients := make([]RoomClient, 0, clientsCount)
+	room := NewRoom(tests.NewTestLogger(), "test-room")
+	wg := sync.WaitGroup{}
+	wg.Add(clientsCount)
+
 	for range clientsCount - 1 {
 		client := mock.NewMockRoomClient(ctrl)
 		client.EXPECT().
@@ -90,11 +100,21 @@ func TestRoomBroadcast_GoodPath(t *testing.T) {
 			AnyTimes()
 
 		client.EXPECT().
-			Write(gomock.Any()).
+			Write(gomock.Any(), gomock.Any()).
 			Return(nil).
 			AnyTimes()
 
-		clients = append(clients, client)
+		client.EXPECT().
+			MsgSubscribe(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ any, _ any) error { defer wg.Wait(); return nil }).
+			AnyTimes()
+
+		client.EXPECT().
+			Close(gomock.Any()).
+			Return(nil).
+			AnyTimes()
+
+		go room.AddClient(client)
 	}
 
 	senderClient := mock.NewMockRoomClient(ctrl)
@@ -104,13 +124,25 @@ func TestRoomBroadcast_GoodPath(t *testing.T) {
 		AnyTimes()
 
 	senderClient.EXPECT().
-		Write(gomock.Any()).
+		Write(gomock.Any(), gomock.Any()).
 		Return(errors.New("the message was returned to the sender")).
 		AnyTimes()
 
-	clients = append(clients, senderClient)
+	senderClient.EXPECT().
+		MsgSubscribe(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ any, _ any) error { defer wg.Wait(); return nil }).
+		AnyTimes()
 
-	room := NewRoom(tests.NewTestLogger(), "test-room", clients...)
+	senderClient.EXPECT().
+		Close(gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	go room.AddClient(senderClient)
 	err := room.Broadcast(senderClient.GetID(), "test-message")
 	assert.NoError(t, err)
+
+	for range clientsCount {
+		wg.Done()
+	}
 }

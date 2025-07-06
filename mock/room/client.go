@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	models "github.com/ASsssker/AnonTalk/internal/models"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -68,16 +69,30 @@ func (mr *MockRoomClientMockRecorder) GetID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetID", reflect.TypeOf((*MockRoomClient)(nil).GetID))
 }
 
-// Write mocks base method.
-func (m *MockRoomClient) Write(msg string) error {
+// MsgSubscribe mocks base method.
+func (m *MockRoomClient) MsgSubscribe(ctx context.Context, msgChan chan<- models.WSMessage) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Write", msg)
+	ret := m.ctrl.Call(m, "MsgSubscribe", ctx, msgChan)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MsgSubscribe indicates an expected call of MsgSubscribe.
+func (mr *MockRoomClientMockRecorder) MsgSubscribe(ctx, msgChan any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MsgSubscribe", reflect.TypeOf((*MockRoomClient)(nil).MsgSubscribe), ctx, msgChan)
+}
+
+// Write mocks base method.
+func (m *MockRoomClient) Write(authorID, msg string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Write", authorID, msg)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Write indicates an expected call of Write.
-func (mr *MockRoomClientMockRecorder) Write(msg any) *gomock.Call {
+func (mr *MockRoomClientMockRecorder) Write(authorID, msg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockRoomClient)(nil).Write), msg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*MockRoomClient)(nil).Write), authorID, msg)
 }
