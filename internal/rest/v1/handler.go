@@ -8,13 +8,21 @@ import (
 
 	"github.com/ASsssker/AnonTalk/internal/models"
 	bp "github.com/ASsssker/AnonTalk/internal/rest/v1/boilerplate"
+	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 //go:generate mockgen -package mock -destination $MOCK_FOLDER/rest/v1/handler/services.go . RoomService
 type RoomService interface {
 	CreateNewRoom(ctx context.Context, roomName string) (*models.Room, error)
 	GetRoom(ctx context.Context, id string) (*models.Room, error)
+	AddUserToRoom(ctx context.Context, roomID string, clientName string, clientConn *websocket.Conn) error
 }
 
 type Handler struct {
@@ -87,9 +95,17 @@ func (h Handler) GetRoomInfo(c echo.Context, id string) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (h Handler) ConnectRoom(ctx echo.Context, id string, params bp.ConnectRoomParams) error {
+func (h Handler) ConnectRoom(c echo.Context, id string, params bp.ConnectRoomParams) error {
+	ctx := c.Request().Context()
 
-	// TODO: Websocket connect
+	connection, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
+	if err != nil {
+		return fmt.Errorf("failed to upgrate http connection to websocket: %w", err)
+	}
+
+	if err := h.roomService.AddUserToRoom(ctx, id, *params.Username, connection); err != nil {
+		return fmt.Errorf("failed to add user to room: %w", err)
+	}
 
 	return nil
 }
