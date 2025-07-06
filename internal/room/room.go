@@ -52,6 +52,19 @@ func NewRoom(log *slog.Logger, name string) *Room {
 	}
 }
 
+func (r *Room) Run() {
+	for {
+		select {
+		case msg := <-r.msgChan:
+			if err := r.Broadcast(msg.AuthorID, msg.Message); err != nil {
+				r.log.Error("failed to broadcast message:" + err.Error())
+			}
+		case <-r.ctx.Done():
+			return
+		}
+	}
+}
+
 func (r *Room) AddClient(client RoomClient) error {
 	r.mu.Lock()
 
@@ -113,6 +126,8 @@ func (r *Room) ClientsCount() int {
 func (r *Room) Close(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+
+	defer r.ctx.Done()
 
 	var err error
 	for _, client := range r.clients {

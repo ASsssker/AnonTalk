@@ -31,9 +31,12 @@ func (c *WSClient) MsgSubscribe(ctx context.Context, msgChan chan<- models.WSMes
 			return nil
 		default:
 			var wsMsg models.WSMessage
-			if err := c.conn.ReadJSON(wsMsg); err != nil {
-				return fmt.Errorf("failed tp read message: %w", err)
+			if err := c.conn.ReadJSON(&wsMsg); err != nil {
+				return fmt.Errorf("failed to read message: %w", err)
 			}
+			wsMsg.AuthorID = c.UUID
+			wsMsg.AuthorName = c.Username
+
 			select {
 			case <-ctx.Done():
 				return nil

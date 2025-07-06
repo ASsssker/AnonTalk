@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AnonTalk WebSocket Chat</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1rem; }
+    #messages { border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: scroll; margin-bottom: 1rem; }
+    .message { margin-bottom: 0.5rem; }
+    .author { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>AnonTalk Chat</h1>
+
+  <label>Username (optional): <input type="text" id="username" /></label><br><br>
+
+  <button id="createRoom">Create Room</button>
+  <button id="connectRoom">Connect Room</button>
+
+  <br><br>
+
+  <label>Room ID: <input type="text" id="roomId" /></label>
+
+  <div id="messages"></div>
+
+  <input type="text" id="input" placeholder="Write your message..." />
+  <button id="send">Send</button>
+
+  <script>
+    let socket;
+
+    document.getElementById("createRoom").onclick = async () => {
+      const name = prompt("Enter room name:");
+      if (!name) return;
+
+      const response = await fetch("/api/v1/room", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+
+      if (!response.ok) {
+        alert("Failed to create room");
+        return;
+      }
+
+      const data = await response.json();
+      document.getElementById("roomId").value = data.id;
+      alert("Room created!");
+    };
+
+    document.getElementById("connectRoom").onclick = () => {
+      const roomId = document.getElementById("roomId").value;
+      const username = document.getElementById("username").value;
+      if (!roomId) return alert("Room ID is required");
+
+      const url = `ws://${location.host}/api/v1/ws/room/${roomId}${username ? "?username=" + encodeURIComponent(username) : ""}`;
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        console.log("Connected to WebSocket");
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const author = data.author_name || data.author_id || "anonymous";
+        const message = data.message;
+
+        const el = document.createElement("div");
+        el.className = "message";
+        el.innerHTML = `<span class="author">${author}:</span> ${message}`;
+        document.getElementById("messages").appendChild(el);
+        document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+      };
+
+      socket.onclose = () => {
+        alert("WebSocket closed");
+      };
+
+      socket.onerror = (err) => {
+        console.error("WebSocket error", err);
+      };
+    };
+
+    document.getElementById("send").onclick = () => {
+      const msg = document.getElementById("input").value.trim();
+      if (!msg || !socket || socket.readyState !== WebSocket.OPEN) return;
+
+      const payload = {
+        author_id: "",
+        author_name: "",
+        message: msg
+      };
+
+      socket.send(JSON.stringify(payload));
+      document.getElementById("input").value = "";
+    };
+  </script>
+</body>
+</html>

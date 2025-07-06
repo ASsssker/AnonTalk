@@ -13,6 +13,9 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// serve index.html
+	// (GET /)
+	ServeIndex(ctx echo.Context) error
 	// healthcheck endpoint
 	// (GET /healthcheck)
 	Healthcheck(ctx echo.Context) error
@@ -33,6 +36,15 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// ServeIndex converts echo context to params.
+func (w *ServerInterfaceWrapper) ServeIndex(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ServeIndex(ctx)
+	return err
 }
 
 // Healthcheck converts echo context to params.
@@ -131,6 +143,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/", wrapper.ServeIndex)
 	router.GET(baseURL+"/healthcheck", wrapper.Healthcheck)
 	router.POST(baseURL+"/room", wrapper.CreateNewRoom)
 	router.GET(baseURL+"/room/:id", wrapper.GetRoomInfo)

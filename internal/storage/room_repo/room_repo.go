@@ -54,6 +54,7 @@ func (r *RoomRepo) NewRoom(_ context.Context, name string) (*models.Room, error)
 
 	newRoom := room.NewRoom(r.log, name)
 	r.rooms[newRoom.ID] = newRoom
+	go newRoom.Run()
 
 	return &models.Room{UUID: newRoom.ID, Name: newRoom.Name}, nil
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ASsssker/AnonTalk/internal/models"
 	bp "github.com/ASsssker/AnonTalk/internal/rest/v1/boilerplate"
+	"github.com/ASsssker/AnonTalk/ui"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -38,10 +39,14 @@ func NewHandler(log *slog.Logger, roomService RoomService) *Handler {
 }
 
 func RegisterHandler(server *echo.Echo, handler bp.ServerInterface) {
-	bp.RegisterHandlers(server, handler)
+	bp.RegisterHandlersWithBaseURL(server, handler, "/api/v1")
 }
 
 var _ bp.ServerInterface = Handler{}
+
+func (h Handler) ServeIndex(c echo.Context) error {
+	return c.HTML(http.StatusOK, ui.IndexHTML)
+}
 
 func (h Handler) Healthcheck(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
@@ -100,11 +105,14 @@ func (h Handler) ConnectRoom(c echo.Context, id string, params bp.ConnectRoomPar
 
 	connection, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
-		return fmt.Errorf("failed to upgrate http connection to websocket: %w", err)
+		// return fmt.Errorf("failed to upgrate http connection to websocket: %w", err)
+		return nil
 	}
 
 	if err := h.roomService.AddUserToRoom(ctx, id, *params.Username, connection); err != nil {
-		return fmt.Errorf("failed to add user to room: %w", err)
+		h.log.Error(err.Error())
+		// return fmt.Errorf("failed to add user to room: %w", err)
+		return nil
 	}
 
 	return nil

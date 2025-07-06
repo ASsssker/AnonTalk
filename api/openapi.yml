@@ -5,6 +5,22 @@ info:
 servers:
   - url: /api/v1
 paths:
+  /:
+    get:
+      tags:
+        - static
+        - index
+      summary: serve index.html
+      description: returns the main static HTML page (index.html)
+      operationId: serveIndex
+      responses:
+        200:
+          description: Returns index.html page
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<!DOCTYPE html><html><head><title>Anon Chat</title></head><body>...</body></html>"
   /swagger:
     get:
       tags:

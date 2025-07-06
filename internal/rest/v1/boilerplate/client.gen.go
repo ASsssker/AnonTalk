@@ -89,6 +89,9 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// ServeIndex request
+	ServeIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// Healthcheck request
 	Healthcheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -105,6 +108,18 @@ type ClientInterface interface {
 
 	// ConnectRoom request
 	ConnectRoom(ctx context.Context, id string, params *ConnectRoomParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) ServeIndex(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewServeIndexRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) Healthcheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -177,6 +192,33 @@ func (c *Client) ConnectRoom(ctx context.Context, id string, params *ConnectRoom
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewServeIndexRequest generates requests for ServeIndex
+func NewServeIndexRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewHealthcheckRequest generates requests for Healthcheck
@@ -406,6 +448,9 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// ServeIndexWithResponse request
+	ServeIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ServeIndexResponse, error)
+
 	// HealthcheckWithResponse request
 	HealthcheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthcheckResponse, error)
 
@@ -422,6 +467,27 @@ type ClientWithResponsesInterface interface {
 
 	// ConnectRoomWithResponse request
 	ConnectRoomWithResponse(ctx context.Context, id string, params *ConnectRoomParams, reqEditors ...RequestEditorFn) (*ConnectRoomResponse, error)
+}
+
+type ServeIndexResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r ServeIndexResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ServeIndexResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type HealthcheckResponse struct {
@@ -537,6 +603,15 @@ func (r ConnectRoomResponse) StatusCode() int {
 	return 0
 }
 
+// ServeIndexWithResponse request returning *ServeIndexResponse
+func (c *ClientWithResponses) ServeIndexWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ServeIndexResponse, error) {
+	rsp, err := c.ServeIndex(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseServeIndexResponse(rsp)
+}
+
 // HealthcheckWithResponse request returning *HealthcheckResponse
 func (c *ClientWithResponses) HealthcheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*HealthcheckResponse, error) {
 	rsp, err := c.Healthcheck(ctx, reqEditors...)
@@ -588,6 +663,22 @@ func (c *ClientWithResponses) ConnectRoomWithResponse(ctx context.Context, id st
 		return nil, err
 	}
 	return ParseConnectRoomResponse(rsp)
+}
+
+// ParseServeIndexResponse parses an HTTP response from a ServeIndexWithResponse call
+func ParseServeIndexResponse(rsp *http.Response) (*ServeIndexResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ServeIndexResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
 }
 
 // ParseHealthcheckResponse parses an HTTP response from a HealthcheckWithResponse call
