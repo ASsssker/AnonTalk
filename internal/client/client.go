@@ -50,10 +50,11 @@ func (c *WSClient) MsgSubscribe(ctx context.Context, msgChan chan<- models.WSMes
 	}
 }
 
-func (c *WSClient) Write(authorID string, msg string) error {
+func (c *WSClient) Write(authorID string, msg models.WSMessage) error {
 	wsMsg := models.WSMessage{
-		AuthorID: authorID,
-		Message:  msg,
+		AuthorID:   authorID,
+		AuthorName: msg.AuthorName,
+		Message:    msg.Message,
 	}
 
 	if err := c.conn.WriteJSON(wsMsg); err != nil {

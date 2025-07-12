@@ -19,7 +19,7 @@ var (
 //go:generate mockgen -package mock -destination $MOCK_FOLDER/room/client.go . RoomClient
 type RoomClient interface {
 	GetID() string
-	Write(authorID string, msg string) error
+	Write(authorID string, msg models.WSMessage) error
 	Close(ctx context.Context) error
 	MsgSubscribe(ctx context.Context, msgChan chan<- models.WSMessage) error
 }
@@ -56,7 +56,7 @@ func (r *Room) Run() {
 	for {
 		select {
 		case msg := <-r.msgChan:
-			if err := r.Broadcast(msg.AuthorID, msg.Message); err != nil {
+			if err := r.Broadcast(msg.AuthorID, msg); err != nil {
 				r.log.Error("failed to broadcast message:" + err.Error())
 			}
 		case <-r.ctx.Done():
@@ -96,7 +96,7 @@ func (r *Room) DeleteClients(clientID string) error {
 	return nil
 }
 
-func (r *Room) Broadcast(withoutClientID string, msg string) error {
+func (r *Room) Broadcast(withoutClientID string, msg models.WSMessage) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/ASsssker/AnonTalk/internal/models"
 	mock "github.com/ASsssker/AnonTalk/mock/room"
 	"github.com/ASsssker/AnonTalk/tests"
 	"github.com/google/uuid"
@@ -139,7 +140,7 @@ func TestRoomBroadcast_GoodPath(t *testing.T) {
 		AnyTimes()
 
 	go room.AddClient(senderClient)
-	err := room.Broadcast(senderClient.GetID(), "test-message")
+	err := room.Broadcast(senderClient.GetID(), models.WSMessage{})
 	assert.NoError(t, err)
 
 	for range clientsCount {

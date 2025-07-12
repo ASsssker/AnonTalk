@@ -84,7 +84,7 @@ func (mr *MockRoomClientMockRecorder) MsgSubscribe(ctx, msgChan any) *gomock.Cal
 }
 
 // Write mocks base method.
-func (m *MockRoomClient) Write(authorID, msg string) error {
+func (m *MockRoomClient) Write(authorID string, msg models.WSMessage) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", authorID, msg)
 	ret0, _ := ret[0].(error)
