@@ -4,31 +4,126 @@
   <meta charset="UTF-8" />
   <title>AnonTalk WebSocket Chat</title>
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1rem; }
-    #messages { border: 1px solid #ccc; padding: 1rem; height: 300px; overflow-y: scroll; margin-bottom: 1rem; }
-    .message { margin-bottom: 0.5rem; }
-    .author { font-weight: bold; }
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f2f4f8;
+      max-width: 700px;
+      margin: auto;
+      padding: 2rem;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #444;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    input[type="text"] {
+      padding: 0.5rem;
+      width: 100%;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      margin-right: 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #357ab8;
+    }
+
+    #messages {
+      background-color: #fff;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      height: 300px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .message {
+      margin-bottom: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      word-wrap: break-word;
+    }
+
+    .author {
+      font-weight: bold;
+      margin-right: 0.3rem;
+    }
+
+    .own-message {
+      background-color: #d9f7be;
+      text-align: right;
+    }
+
+    .other-message {
+      background-color: #e9f0fb;
+      text-align: left;
+    }
+
+    #input {
+      width: calc(100% - 100px);
+      display: inline-block;
+    }
+
+    #send {
+      width: 80px;
+      vertical-align: top;
+    }
   </style>
 </head>
 <body>
   <h1>AnonTalk Chat</h1>
 
-  <label>Username (optional): <input type="text" id="username" /></label><br><br>
+  <label>Username (optional):</label>
+  <input type="text" id="username" />
 
   <button id="createRoom">Create Room</button>
   <button id="connectRoom">Connect Room</button>
 
-  <br><br>
-
-  <label>Room ID: <input type="text" id="roomId" /></label>
+  <label>Room ID:</label>
+  <input type="text" id="roomId" />
 
   <div id="messages"></div>
 
-  <input type="text" id="input" placeholder="Write your message..." />
-  <button id="send">Send</button>
+  <div>
+    <input type="text" id="input" placeholder="Write your message..." />
+    <button id="send">Send</button>
+  </div>
 
   <script>
     let socket;
+    let currentUsername = "";
+
+    const addMessageToChat = (author, message) => {
+      const isOwn = author === currentUsername || (!author && !currentUsername);
+      const el = document.createElement("div");
+      el.className = `message ${isOwn ? "own-message" : "other-message"}`;
+      el.innerHTML = `<span class="author">${author || "anonymous"}:</span> ${message}`;
+      document.getElementById("messages").appendChild(el);
+      document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+    };
 
     document.getElementById("createRoom").onclick = async () => {
       const name = prompt("Enter room name:");
@@ -52,7 +147,9 @@
 
     document.getElementById("connectRoom").onclick = () => {
       const roomId = document.getElementById("roomId").value;
-      const username = document.getElementById("username").value;
+      const username = document.getElementById("username").value.trim();
+      currentUsername = username; // сохраняем имя
+
       if (!roomId) return alert("Room ID is required");
 
       const url = `ws://${location.host}/api/v1/ws/room/${roomId}${username ? "?username=" + encodeURIComponent(username) : ""}`;
@@ -66,12 +163,7 @@
         const data = JSON.parse(event.data);
         const author = data.author_name || data.author_id || "anonymous";
         const message = data.message;
-
-        const el = document.createElement("div");
-        el.className = "message";
-        el.innerHTML = `<span class="author">${author}:</span> ${message}`;
-        document.getElementById("messages").appendChild(el);
-        document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+        addMessageToChat(author, message);
       };
 
       socket.onclose = () => {
@@ -89,11 +181,12 @@
 
       const payload = {
         author_id: "",
-        author_name: "",
+        author_name: currentUsername,
         message: msg
       };
 
       socket.send(JSON.stringify(payload));
+      addMessageToChat(currentUsername, msg); // сразу добавляем своё сообщение
       document.getElementById("input").value = "";
     };
   </script>
