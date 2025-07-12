@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,10 +12,14 @@ import (
 	wschat "github.com/ASsssker/AnonTalk/internal/app/ws_chat"
 )
 
+var srvAddr = flag.String("addr", "0.0.0.0:8000", "serve address")
+
 func main() {
+	flag.Parse()
+
 	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	app := wschat.NewApp(log)
+	app := wschat.NewApp(log, *srvAddr)
 	go app.Run()
 
 	stop := make(chan os.Signal, 1)

@@ -17,13 +17,13 @@ type App struct {
 	server *http.Server
 }
 
-func NewApp(log *slog.Logger) *App {
+func NewApp(log *slog.Logger, addr string) *App {
 	log.Info("start service")
 	roomProvider := roomrepo.NewRoomRepo(log)
 	roomService := services.NewRoomService(log, roomProvider)
 
 	server := echo.New()
-	server.Server.Addr = ":8000"
+	server.Server.Addr = addr
 	handler := v1.NewHandler(log, roomService)
 
 	v1.RegisterHandler(server, handler)
