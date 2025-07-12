@@ -32,6 +32,10 @@ func (c *WSClient) MsgSubscribe(ctx context.Context, msgChan chan<- models.WSMes
 		default:
 			var wsMsg models.WSMessage
 			if err := c.conn.ReadJSON(&wsMsg); err != nil {
+				if websocket.IsCloseError(err, websocket.CloseGoingAway, websocket.CloseMessage) {
+					return nil
+				}
+
 				return fmt.Errorf("failed to read message: %w", err)
 			}
 			wsMsg.AuthorID = c.UUID
