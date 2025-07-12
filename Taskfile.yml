@@ -1,12 +1,25 @@
 version: 3
 
 vars:
+  BIN_NAME: AnonTalk
   MOCKS_PATH: $PWD/mock
   DEV_TOOLS:
     - github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
     - go.uber.org/mock/mockgen@v0.5.2
 
 tasks:
+  build:all:
+    desc: build app for linux and windows
+    cmds:
+      - task: build:linux
+      - task: build:windows
+  build:linux:
+    desc: build app for linux
+    cmd: GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/{{.BIN_NAME}} cmd/main.go
+  build:windows:
+    desc: build app for windows
+    cmd: GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/{{.BIN_NAME}}.exe cmd/main.go
+
   tools:install:
     desc: install dev tools
     cmds:
@@ -14,6 +27,7 @@ tasks:
         {{range $tool := .DEV_TOOLS}}
         go install {{$tool}}
         {{end}}
+
   generate:bp:
     desc: generate boilerplates
     cmds:
